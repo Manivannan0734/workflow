@@ -2,12 +2,22 @@ import React, { useEffect, useState, useRef } from "react";
 import { Modal, Button, Form, Icon, Dropdown, Segment, Header, Table, Input } from "semantic-ui-react";
 import axiosInstance from "../utilsJS/axiosInstance";
 import { ForwardRefEditor } from "@/utilsJS/ForwardRefEditor";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { defaultSchema } from "hast-util-sanitize";
 
 // Helper component for the Subtask Description Editor in the table
 const SubtaskDescriptionCell = React.forwardRef(({ markdown, onChange, internalMode }, ref) => (
   <Form.Field style={{ margin: 0 }}>
     {internalMode === "view" ? (
-      <div dangerouslySetInnerHTML={{ __html: markdown }} />
+      <ReactMarkdown
+  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+>
+  {markdown}
+</ReactMarkdown>
+
+    
     ) : (
       <ForwardRefEditor
         editorRef={ref}
@@ -357,7 +367,13 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
           <Table.Row key={idx}>
             <Table.Cell>{st.action}</Table.Cell>
             <Table.Cell>
-              <div dangerouslySetInnerHTML={{ __html: st.description }} />
+              <ReactMarkdown
+  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+>
+  {st.description}
+</ReactMarkdown>
+
+  
             </Table.Cell>
             <Table.Cell>{st.assignee}</Table.Cell>
             <Table.Cell>{st.dependsOn || "N/A"}</Table.Cell>
@@ -424,7 +440,12 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                   <Table.Body>
                     <Table.Row>
                       <Table.Cell>
-                        <div dangerouslySetInnerHTML={{ __html: description }} />
+                        <ReactMarkdown
+  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+>
+  {description}
+</ReactMarkdown>
+
                       </Table.Cell>
                     </Table.Row>
                   </Table.Body>
@@ -452,7 +473,13 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                   <Table.Body>
                     <Table.Row>
                       <Table.Cell>
-                        <div dangerouslySetInnerHTML={{ __html: templateDescription }} />
+                        <ReactMarkdown
+  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+>
+  {templateDescription}
+</ReactMarkdown>
+
+             
                       </Table.Cell>
                     </Table.Row>
                   </Table.Body>
