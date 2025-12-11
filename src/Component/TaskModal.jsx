@@ -7,7 +7,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { defaultSchema } from "hast-util-sanitize";
 
-// Helper component for the Subtask Description Editor in the table
+
 const SubtaskDescriptionCell = React.forwardRef(({ markdown, onChange, internalMode }, ref) => (
   <Form.Field style={{ margin: 0 }}>
     {internalMode === "view" ? (
@@ -373,7 +373,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
   {st.description}
 </ReactMarkdown>
 
-  
+              
             </Table.Cell>
             <Table.Cell>{st.assignee}</Table.Cell>
             <Table.Cell>{st.dependsOn || "N/A"}</Table.Cell>
@@ -382,16 +382,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       </Table.Body>
     </Table>
   );
-  
-  // --- END MODIFIED/NEW RENDERING FUNCTIONS ---
-
-
-  // The original renderEditableSubtask is no longer used, but I'll comment it out
-  /*
-  const renderEditableSubtask = (st, index, listSetter, listState) => {
-     // ... (original implementation)
-  };
-  */
+   
 
   return (
     <Modal open={open} onClose={handleClose} size="large">

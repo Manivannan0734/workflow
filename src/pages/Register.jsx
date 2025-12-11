@@ -84,7 +84,7 @@ function Register() {
 
     try {
       const res = await axiosInstance.post(
-        "http://localhost:8000/api/register",
+        "/register",
         formData,
         { headers: { "Content-Type": "application/json" } }
       );
