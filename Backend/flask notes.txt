@@ -1,0 +1,5 @@
+want to add new end pt means create on folder under app
+
+then create routes.py and __init__.py in the route simply write the end pt logic 
+
+register the blueprint(folders are called blueprints) the root __init__.py

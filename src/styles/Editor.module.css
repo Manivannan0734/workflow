@@ -1,0 +1,139 @@
+.selectWrapper {
+  margin-bottom: 1rem;
+}
+
+.selectLabel {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.selectBox {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.dropdownWrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.dropdownHeader {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  cursor: pointer;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.arrow {
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.dropdownList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  z-index: 1000;
+  padding: 4px 0;
+}
+
+.dropdownItem {
+  display: block;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdownItem:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdownItem input {
+  margin-right: 6px;
+}
+
+
+
+
+
+/* Modal Form Styles */
+.formWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputLabel {
+  font-weight: bold;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+.inputBox {
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inputBox:disabled {
+  background-color: #f5f5f5;
+}
+
+
+/* Search Box Styles */
+.searchWrapper {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.searchBox {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.searchBox:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 2px #007bff;
+}
+
+.searchButton {
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.searchButton:hover {
+  background-color: #0056b3;
+}

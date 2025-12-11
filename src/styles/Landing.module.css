@@ -1,0 +1,40 @@
+.container {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: #ffffff;
+}
+
+.cardGroup {
+  gap: 1.5rem; /* Adds small gap between cards */
+  justify-content: center !important;
+}
+
+.card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 12px !important;
+  overflow: hidden;
+  margin: 0.5rem !important; /* extra spacing */
+  width: 250px !important; /* consistent size */
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.imageWrapper {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image {
+  object-fit:contain;
+  width: 100%;
+  height: 100%;
+}

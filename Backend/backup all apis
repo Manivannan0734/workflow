@@ -1,0 +1,300 @@
+import os
+from flask import Flask, request, jsonify, session
+from flask_cors import CORS
+import psycopg2
+from urllib.parse import urlparse
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "test")
+
+CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+
+# -------------------- DATABASE CONNECTION --------------------
+DATABASE_URL = os.getenv("DATABASE_URL")
+result = urlparse(DATABASE_URL)
+conn = psycopg2.connect(
+    host=result.hostname,
+    database=result.path[1:],
+    user=result.username,
+    password=result.password,
+    port=result.port
+)
+cur = conn.cursor()
+
+# -------------------- LOGIN --------------------
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"success": False, "message": "Username and password required"}), 400
+
+    cur.execute(
+        'SELECT * FROM "User" WHERE "firstName"=%s AND "password"=%s', (
+            username, password)
+    )
+    user = cur.fetchone()
+
+    if user:
+        session["username"] = user[3]
+        return jsonify({"success": True, "displayName": user[3]})
+    elif username == "Admin" and password == "Admin":
+        session["username"] = "Admin"
+        return jsonify({"success": True, "displayName": "Admin"})
+    else:
+        return jsonify({"success": False, "message": "Invalid username or password"}), 401
+
+# -------------------- SESSION CHECK --------------------
+
+
+@app.route("/api/check-session", methods=["GET"])
+def check_session():
+    if "username" in session:
+        return jsonify({"success": True, "displayName": session["username"]})
+    return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+# -------------------- LOGOUT --------------------
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"success": True, "message": "Logged out"})
+
+# -------------------- GET USERS --------------------
+
+
+@app.route("/api/users/all", methods=["GET"])
+def get_users_all():
+    # Read query param ?showDeleted=true/false
+    show_deleted = request.args.get("showDeleted", "false").lower() == "true"
+
+    try:
+        if show_deleted:
+            cur.execute(
+                'SELECT id, "firstName", "lastName", "displayName", "email", "dept", "createdAt", "updateSource", "isDeleted" '
+                'FROM "User" ORDER BY id ASC'
+            )
+        else:
+            cur.execute(
+                'SELECT id, "firstName", "lastName", "displayName", "email", "dept", "createdAt", "updateSource", "isDeleted" '
+                'FROM "User" WHERE "isDeleted"=FALSE ORDER BY id ASC'
+            )
+
+        users = cur.fetchall()
+        user_list = [
+            {
+                "id": u[0],
+                "firstName": u[1],
+                "lastName": u[2],
+                "displayName": u[3],
+                "email": u[4],
+                "dept": u[5],
+                "createdAt": u[6].isoformat(),
+                "updateSource": u[7],
+                "isDeleted": u[8]
+            }
+            for u in users
+        ]
+        return jsonify(user_list)
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# -------------------- UPDATE USER --------------------
+
+
+@app.route("/api/users/update/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
+    data = request.get_json()
+    try:
+        # Build dynamic SET clause
+        fields = []
+        values = []
+        for key in ["firstName", "lastName", "displayName", "dept", "updateSource"]:
+            if key in data:
+                fields.append(f'"{key}"=%s')
+                values.append(data[key])
+        if not fields:
+            return jsonify({"success": False, "message": "No fields to update"}), 400
+
+        values.append(user_id)
+        sql = f'UPDATE "User" SET {", ".join(fields)} WHERE id=%s RETURNING id, "firstName", "lastName", "displayName", "email", "dept", "createdAt", "updateSource"'
+        cur.execute(sql, tuple(values))
+        updated = cur.fetchone()
+        conn.commit()
+
+        if updated:
+            user = {
+                "id": updated[0],
+                "firstName": updated[1],
+                "lastName": updated[2],
+                "displayName": updated[3],
+                "email": updated[4],
+                "dept": updated[5],
+                "createdAt": updated[6].isoformat(),
+                "updateSource": updated[7]
+            }
+            return jsonify(user)
+
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# -------------------- SOFT DELETE USER --------------------
+
+
+@app.route("/api/users/delete/<int:user_id>", methods=["PUT"])
+def soft_delete_user(user_id):
+    try:
+        cur.execute(
+            'UPDATE "User" SET "isDeleted" = TRUE WHERE id = %s', (user_id,))
+        conn.commit()
+        return jsonify({"success": True, "message": "User soft deleted"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# -------------------- REGISTER --------------------
+
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    user_id = data.get("id")
+    first_name = data.get("firstName")
+    last_name = data.get("lastName")
+    display_name = data.get("displayName")
+    email = data.get("email")
+    dept = data.get("dept")
+    password = data.get("password")
+
+    if not all([user_id, first_name, last_name, display_name, email, dept, password]):
+        return jsonify({"success": False, "message": "All fields are required"}), 400
+
+    if not str(user_id).isdigit() or len(str(user_id)) != 8:
+        return jsonify({"success": False, "message": "UserID must be an 8-digit number"}), 400
+
+    try:
+        cur.execute('SELECT id FROM "User" WHERE id = %s', (user_id,))
+        if cur.fetchone():
+            return jsonify({"success": False, "message": "UserID already exists"}), 409
+
+        cur.execute(
+            'INSERT INTO "User" (id, "firstName", "lastName", "displayName", "email", "dept", "password", "createdAt", "updateSource", "isDeleted") '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, FALSE) RETURNING id',
+            (user_id, first_name, last_name,
+             display_name, email, dept, password, "WEB")
+        )
+        conn.commit()
+        new_user_id = cur.fetchone()[0]
+        return jsonify({"success": True, "userId": new_user_id, "message": "User registered successfully"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# -------------------- GET GROUPS --------------------
+
+
+@app.route("/api/groups", methods=["GET"])
+def get_groups():
+    with conn.cursor() as cur:
+        cur.execute(
+            'SELECT id, name, "createdAt", "createdBy" FROM "Group" ORDER BY "createdAt" DESC'
+        )
+        groups = cur.fetchall()
+        group_list = [
+            {"id": g[0], "name": g[1], "createdAt": g[2].isoformat(),
+             "createdBy": g[3]}
+            for g in groups
+        ]
+    return jsonify(group_list)
+
+# -------------------- GET GROUP MEMBERS --------------------
+
+
+@app.route("/api/groups/<int:group_id>/members", methods=["GET"])
+def get_group_members(group_id):
+    with conn.cursor() as cur:
+        cur.execute('''
+            SELECT u.id, u."firstName", u."lastName", u."displayName", u.email, u."dept"
+            FROM "GroupMember" gm
+            JOIN "User" u ON u.id = gm."userId"
+            WHERE gm."groupId" = %s
+            ORDER BY u."firstName"
+        ''', (group_id,))
+        members = cur.fetchall()
+        member_list = [
+            {"id": m[0], "firstName": m[1], "lastName": m[2],
+                "displayName": m[3], "email": m[4], "dept": m[5]}
+            for m in members
+        ]
+    return jsonify(member_list)
+
+
+# ------------update group name only as of now--------------
+@app.route("/api/groups/update/<int:group_id>", methods=["PUT"])
+def update_group(group_id):
+    data = request.get_json()
+    try:
+        fields = []
+        values = []
+
+        # Only these fields are allowed
+        for key in ["name", "createdBy", "createdAt"]:
+            if key in data:
+                fields.append(f'"{key}"=%s')
+                values.append(data[key])
+
+        if not fields:
+            return jsonify({"success": False, "message": "No fields to update"}), 400
+
+        # Respect soft-delete: only update if not deleted
+        values.append(group_id)
+        sql = f'UPDATE "Group" SET {", ".join(fields)} WHERE id=%s AND COALESCE(is_deleted, false)=false RETURNING id, name, "createdBy", "createdAt"'
+        cur.execute(sql, tuple(values))
+        updated = cur.fetchone()
+        conn.commit()
+
+        if updated:
+            return jsonify({
+                "id": updated[0],
+                "name": updated[1],
+                "createdBy": updated[2],
+                "createdAt": updated[3].isoformat()
+            })
+
+        return jsonify({"success": False, "message": "Group not found or deleted"}), 404
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# -------------------- SOFT DELETE GROUP --------------------
+@app.route("/api/groups/delete/<int:group_id>", methods=["PUT"])
+def soft_delete_group(group_id):
+    try:
+        cur.execute(
+            'UPDATE "Group" SET "is_deleted" = TRUE WHERE id = %s', (group_id,)
+        )
+        conn.commit()
+        return jsonify({"success": True, "message": "Group soft deleted"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# -------------------- RUN SERVER --------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)

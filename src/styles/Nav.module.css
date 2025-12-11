@@ -1,0 +1,61 @@
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+   
+}
+
+.username {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #222;
+  background: #f5f5f5;
+  border-radius: 0.6rem;
+  padding: 6px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease,
+    transform 0.1s ease;
+  cursor: pointer;
+}
+
+.username:hover {
+  background: #ededed;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.nameText {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: #333;
+ 
+}
+ 
+.logoutButton {
+  background: linear-gradient(135deg, #e63946, #c71c2a);
+  border: none;
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
+}
+
+.logoutButton:hover {
+  background: linear-gradient(135deg, #ff4b5c, #d7263d);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.18);
+}
+
+.logoutButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}

@@ -1,0 +1,35 @@
+.wrapper {
+  display: flex;
+  justify-content: center; /* Centers children horizontally */
+  align-items: center; /* Centers children vertically */
+  min-height:80vh; /* Ensures it takes up the full viewport height */
+  background-color: white;
+  margin: 0;
+  padding: 0;
+   
+}
+
+.segment {
+  max-width: 500px;
+  background-color: #fff !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 16px !important;
+  text-align: center !important;
+}
+
+.header {
+  font-size: 2em !important;
+  margin-top: 0.5em !important;
+  color: #db2828 !important; /* Semantic red */
+}
+
+.message {
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 1.5em;
+}
+
+.button {
+  border-radius: 25px !important;
+  font-weight: bold !important;
+}

@@ -1,0 +1,74 @@
+/* TemplateModal.module.css */
+
+/* Styles for the positioning of the Edit/View button */
+.editButtonContainer {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.editButton {
+    /* Corresponds to: marginTop: "1em", position: "absolute", marginRight: "1em" */
+    margin-top: 1em;
+    position: absolute;
+    margin-right: 1em;
+}
+
+/* Styles for the main template description editor */
+.descriptionEditorContainer {
+    /* Corresponds to: border: "1px solid #ccc", borderRadius: "6px", padding: "6px", minHeight: "200px" */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px;
+    min-height: 200px;
+}
+
+/* Styles for the subtasks header */
+.subtasksHeader {
+    /* Corresponds to: marginTop: "1em" */
+    margin-top: 1em;
+    
+}
+
+/* Styles for the subtasks table wrapper (handles scrolling) */
+.subtasksTableWrapper {
+    /* Corresponds to: overflowX: "auto" */
+    overflow-x: auto;
+}
+
+/* Styles for the sticky header in the subtasks table */
+.stickyHeader {
+    /* Corresponds to: position: "sticky", top: 0, zIndex: 1, backgroundColor: "white" */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: white;
+    /* Ensure the table itself has enough width for the overflow to matter */
+    min-width: 800px; /* Adjust as necessary, default semantic UI is ~100% or based on content */
+}
+
+.subtaskRow {
+    /* Optional: style for draggable rows */
+    cursor: grab;
+}
+
+.expandedRow {
+    /* Style for the row containing the expanded description */
+    background-color: #f9f9f9;
+}
+
+.descriptionContent {
+    padding: 10px;
+}
+
+.subtaskDescriptionEditor {
+    /* Corresponds to: marginTop: "8px", minHeight: "100px" */
+    margin-top: 8px;
+    min-height: 100px;
+}
+
+/* Styles for the Add Subtask button */
+.addSubtaskButton {
+    /* Corresponds to: marginTop: "1em" */
+    margin-top: 1em;
+}

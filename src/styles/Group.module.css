@@ -1,0 +1,45 @@
+.pageContainer {
+  margin-top: 2rem !important;
+}
+
+.segmentBox {
+  border-radius: 14px !important;
+  padding: 1.5rem !important;
+}
+
+.headerTitle {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #333;
+  font-weight: 600 !important;
+}
+
+.backBtn,
+.editBtn {
+  background-color: #5f3d97ff !important;
+  color: white !important;
+  border-radius: 8px !important;
+}
+
+.tableHeader {
+  background-color: #5f3d97ff !important;
+  color: white !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+}
+
+.membersText {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.actionsBtn {
+  border-radius: 6px !important;
+}
+
+.noData {
+  text-align: center !important;
+  padding: 1rem !important;
+  font-size: 1.1rem;
+  color: #666;
+}
