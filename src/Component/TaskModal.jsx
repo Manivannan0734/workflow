@@ -7,17 +7,14 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { defaultSchema } from "hast-util-sanitize";
 
-
 const SubtaskDescriptionCell = React.forwardRef(({ markdown, onChange, internalMode }, ref) => (
   <Form.Field style={{ margin: 0 }}>
     {internalMode === "view" ? (
       <ReactMarkdown
-  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
->
-  {markdown}
-</ReactMarkdown>
-
-    
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+      >
+        {markdown}
+      </ReactMarkdown>
     ) : (
       <ForwardRefEditor
         editorRef={ref}
@@ -29,7 +26,6 @@ const SubtaskDescriptionCell = React.forwardRef(({ markdown, onChange, internalM
   </Form.Field>
 ));
 SubtaskDescriptionCell.displayName = 'SubtaskDescriptionCell';
-
 
 const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskSaved }) => {
   const mapMode = (m) => {
@@ -55,13 +51,9 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
   const editorRef = useRef(null);
   const templateEditorRef = useRef(null);
-  // Ref for the subtask editor (using a single one as a placeholder, though multiple are rendered)
   const subtaskEditorRefs = useRef([]); 
 
-  // NEW: Assignee dropdown options
   const [assigneeOptions, setAssigneeOptions] = useState([]);
-
-  // New: dirty tracking for changes
   const [isDirty, setIsDirty] = useState(false);
 
   const loadAssignees = async () => {
@@ -151,7 +143,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
         setTemplateSubtasks([]);
       }
 
-      // Reset dirty after loading existing task details
       setIsDirty(false);
     } catch (err) {
       console.error("Failed to load task details", err);
@@ -184,8 +175,8 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
   }, [open, internalMode, task]);
 
   const onTemplateChange = async (e, { value }) => {
+    if (internalMode === "edit") return; // DISABLE changing template in edit mode
     setTemplateId(value);
-    // mark dirty when template selection changed
     setIsDirty(true);
     if (value) setDescription("");
     try {
@@ -205,7 +196,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
     }
   };
 
-  // Subtask validation (Option A: strict)
   const isSubtaskValid = (st) =>
     !!(st?.action?.toString().trim()) &&
     !!(st?.description?.toString().trim()) &&
@@ -242,21 +232,15 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
     }
   };
 
-  // helper to mark dirty
   const markDirty = () => setIsDirty(true);
 
-  // --- START MODIFIED/NEW RENDERING FUNCTIONS ---
-
-  // Function to remove a subtask
   const removeSubtask = (index, listSetter, listState) => {
     const updated = listState.filter((_, i) => i !== index);
     listSetter(updated);
     markDirty();
   };
-  
-  // New: Renders subtasks in an editable table format
+
   const renderEditableSubtaskTable = (listState, listSetter) => {
-    // Ensure we have enough refs for all subtasks
     subtaskEditorRefs.current = listState.map(
         (element, i) => subtaskEditorRefs.current[i] ?? React.createRef()
     );
@@ -283,7 +267,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
         <Table.Body>
           {listState.map((st, index) => (
             <Table.Row key={index} warning={!isSubtaskValid(st)}>
-              {/* Action */}
               <Table.Cell>
                 <Form.Input
                   value={st.action || ""}
@@ -293,7 +276,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                 />
               </Table.Cell>
 
-              {/* Description */}
               <Table.Cell>
                 <SubtaskDescriptionCell
                   markdown={st.description || ""}
@@ -303,7 +285,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                 />
               </Table.Cell>
 
-              {/* Assignee */}
               <Table.Cell>
                 <Dropdown
                   placeholder="Select Assignee"
@@ -322,7 +303,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                 />
               </Table.Cell>
 
-              {/* Depends On */}
               <Table.Cell>
                 <Input
                   fluid
@@ -333,7 +313,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                 />
               </Table.Cell>
               
-              {/* Remove Button */}
               <Table.Cell textAlign="center">
                 <Button 
                   icon='trash' 
@@ -349,8 +328,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       </Table>
     );
   };
-  
-  // Existing function for view mode (simplified)
+
   const renderSubtaskTable = (list) => (
     <Table celled structured>
       <Table.Header>
@@ -368,12 +346,10 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
             <Table.Cell>{st.action}</Table.Cell>
             <Table.Cell>
               <ReactMarkdown
-  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
->
-  {st.description}
-</ReactMarkdown>
-
-              
+                rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+              >
+                {st.description}
+              </ReactMarkdown>
             </Table.Cell>
             <Table.Cell>{st.assignee}</Table.Cell>
             <Table.Cell>{st.dependsOn || "N/A"}</Table.Cell>
@@ -382,7 +358,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       </Table.Body>
     </Table>
   );
-   
 
   return (
     <Modal open={open} onClose={handleClose} size="large">
@@ -417,7 +392,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                 options={templates}
                 value={templateId ?? ""}
                 onChange={onTemplateChange}
-                disabled={internalMode === "view"}
+                disabled={internalMode === "view" || internalMode === "edit"} // EDIT MODE: disable change
                 loading={loadingTemplates}
               />
             </Form.Field>
@@ -432,11 +407,10 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                     <Table.Row>
                       <Table.Cell>
                         <ReactMarkdown
-  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
->
-  {description}
-</ReactMarkdown>
-
+                          rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+                        >
+                          {description}
+                        </ReactMarkdown>
                       </Table.Cell>
                     </Table.Row>
                   </Table.Body>
@@ -457,7 +431,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
           {templateId && (
             <Form.Field>
               <Header as="h4" attached="top">
-                Description
+                Template Description (Saved in Task)
               </Header>
               {internalMode === "view" ? (
                 <Table celled>
@@ -465,19 +439,19 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                     <Table.Row>
                       <Table.Cell>
                         <ReactMarkdown
-  rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
->
-  {templateDescription}
-</ReactMarkdown>
-
-             
+                          rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema }]]}
+                        >
+                          {templateDescription}
+                        </ReactMarkdown>
                       </Table.Cell>
                     </Table.Row>
                   </Table.Body>
                 </Table>
               ) : (
                 <ForwardRefEditor
-                  key={`template-editor-${templateId}-${Math.random()}`}
+                  {...(internalMode === "create_template"
+                    ? { key: `template-editor-${templateDescription}` }
+                    : {})}
                   editorRef={templateEditorRef}
                   markdown={templateDescription}
                   onChange={(v) => {
@@ -489,11 +463,10 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
             </Form.Field>
           )}
 
-          {/* ===== Template Subtasks (Table view for all modes) ===== */}
           {templateId && (
             <>
               <Header as="h4" attached="top">
-                Subtasks
+                Template Subtasks
               </Header>
 
               {templateSubtasks.length > 0 &&
@@ -520,7 +493,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
             </>
           )}
 
-          {/* ===== Task Subtasks (Table view for all modes) ===== */}
           {!templateId && (
             <>
               <Header as="h4" attached="top">
@@ -554,7 +526,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       </Modal.Content>
 
       <Modal.Actions>
-        {/* Single Edit/View toggle button only shown if there is a task ID (i.e., not initial create) */}
         {task?.id && (
           <Button
             color="blue"
@@ -568,7 +539,6 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
           </Button>
         )}
         
-         
         {internalMode !== "view" && (
           <Button
             color="green"
