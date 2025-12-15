@@ -9,9 +9,11 @@ const Landing = () => {
     { name: "Groups", link: "/Group", image:"/assets/grp.jpg"   },
     { name: "Templates", link: "/Templates", image: "/assets/template.jpg" },
     { name: "Tasks", link: "/TasksList", image: "/assets/task.jpg" },
+    { name: "Ai", link: "/Ai", image: "/assets/ai.jpg" },
     { name: "Issues", link: "/Issues", image: "/assets/issue.jpg" },
     { name: "Chats", link: "/Chats", image: "/assets/chat.jpg" },
     { name: "Logs", link: "/Logs", image: "/assets/log.jpg" },
+    
   ];
 
   return (

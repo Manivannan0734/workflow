@@ -457,7 +457,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
           {templateId && (
             <Form.Field>
               <Header as="h4" attached="top">
-                Template Description (Saved in Task)
+                Description
               </Header>
               {internalMode === "view" ? (
                 <Table celled>
@@ -493,7 +493,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
           {templateId && (
             <>
               <Header as="h4" attached="top">
-                Template Subtasks
+                Subtasks
               </Header>
 
               {templateSubtasks.length > 0 &&

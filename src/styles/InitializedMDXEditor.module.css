@@ -1,10 +1,23 @@
-
 .toolbarContainer {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
+  gap: 6px;
+
+  /* 🔥 Make toolbar a single horizontal row */
+  flex-direction: row;
+  flex-wrap: nowrap;
+
+  /* 🔥 Enable ONLY horizontal scrolling */
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  /* 🔥 Prevent wrapping into second line */
+  white-space: nowrap;
+
+  padding-bottom: 4px;
 }
+
+/* Keep the rest the same */
 
 .alwaysVisible {
   display: flex;
@@ -22,35 +35,14 @@
   gap: 4px;
 }
 
-.ellipsisButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 18px;
-  transition: background-color 0.2s;
-}
-
-.ellipsisButton:hover {
-  background-color: #f3f4f6;
-}
-
 .dropdownMenu {
   position: absolute;
   right: 0;
   top: 40px;
   min-width: 180px;
   padding: 8px;
-  background-color: white;
-  border: 1px solid #d1d5db;
   border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   z-index: 50;
 }
 
@@ -58,12 +50,9 @@
   padding: 6px 0;
 }
 
-.mobileContainer {
-  position: relative;
-  display: flex;
-}
-
-.mobileContainerHidden {
+.mobileContainer,
+.mobileContainerHidden,
+.ellipsisButton {
   display: none;
 }
 
