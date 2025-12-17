@@ -89,7 +89,7 @@ export default function OllamaChat() {
               onClick={handleBack}
               icon
               labelPosition="left"
-              style={{ backgroundColor: "#5f3d97ff" }}
+              style={{ backgroundColor: "#5f3d97ff",marginBottom:"1rem" }}
             >
               <Icon name="arrow left" />
               Back
