@@ -92,17 +92,17 @@ const SubtaskTable = React.memo(
                 }}
               >
                 <tr>
-                  <Table.HeaderCell width={1} textAlign="center">
+                  <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={1} textAlign="center">
                     Order
                   </Table.HeaderCell>
-                  <Table.HeaderCell width={2}>Action</Table.HeaderCell>
-                  <Table.HeaderCell width={2}>Depends On</Table.HeaderCell>
-                  <Table.HeaderCell width={2}>Assignee</Table.HeaderCell>
-                  <Table.HeaderCell width={1} textAlign="center">
+                  <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Action</Table.HeaderCell>
+                  <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Depends On</Table.HeaderCell>
+                  <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Assignee</Table.HeaderCell>
+                  <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={1} textAlign="center">
                     Description
                   </Table.HeaderCell>
                   {editMode && (
-                    <Table.HeaderCell width={1}>Remove</Table.HeaderCell>
+                    <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={1}>Remove</Table.HeaderCell>
                   )}
                 </tr>
               </thead>

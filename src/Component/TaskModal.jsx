@@ -256,11 +256,11 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       <Table celled structured>
         <Table.Header>
           <Table.Row>
-            <Table.HeaderCell width={3}>Action *</Table.HeaderCell>
-            <Table.HeaderCell width={7}>Description *</Table.HeaderCell>
-            <Table.HeaderCell width={3}>Assignee *</Table.HeaderCell>
-            <Table.HeaderCell width={2}>Depends On</Table.HeaderCell>
-            <Table.HeaderCell width={1}>Remove</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }}  width={3}>Action *</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={7}>Description *</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={3}>Assignee *</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Depends On</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={1}>Remove</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
 
@@ -333,10 +333,10 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
     <Table celled structured>
       <Table.Header>
         <Table.Row>
-          <Table.HeaderCell width={3}>Action</Table.HeaderCell>
-          <Table.HeaderCell width={7}>Description</Table.HeaderCell>
-          <Table.HeaderCell width={3}>Assignee</Table.HeaderCell>
-          <Table.HeaderCell width={2}>Depends On</Table.HeaderCell>
+          <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={3}>Action</Table.HeaderCell>
+          <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={7}>Description</Table.HeaderCell>
+          <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={3}>Assignee</Table.HeaderCell>
+          <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Depends On</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
 
@@ -371,7 +371,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       <Modal.Content scrolling>
         <Form>
           <Form.Field required>
-            <label>Task Name</label>
+            <h3>Task Name</h3>
             <input
               value={name}
               onChange={(e) => {
@@ -384,15 +384,15 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
           {(internalMode === "create_template" || internalMode === "edit") && (
             <Form.Field>
-              <label>Select Template</label>
+              <h3>Select Template</h3>
               <Dropdown
                 selection
                 fluid
-                clearable
+           
                 options={templates}
                 value={templateId ?? ""}
                 onChange={onTemplateChange}
-                disabled={internalMode === "view" || internalMode === "edit"} // EDIT MODE: disable change
+                disabled={internalMode === "view" || internalMode === "edit"} 
                 loading={loadingTemplates}
               />
             </Form.Field>
@@ -400,7 +400,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
           {!templateId && (
             <Form.Field>
-              <label>Description</label>
+              <h3>Description</h3>
               {internalMode === "view" ? (
                 <Table celled>
                   <Table.Body>
@@ -430,9 +430,9 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
           {templateId && (
             <Form.Field>
-              <Header as="h4" attached="top">
-                Template Description (Saved in Task)
-              </Header>
+              <h3>
+                Description
+              </h3>
               {internalMode === "view" ? (
                 <Table celled>
                   <Table.Body>
@@ -465,9 +465,9 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
           {templateId && (
             <>
-              <Header as="h4" attached="top">
-                Template Subtasks
-              </Header>
+              <h3>
+                Subtasks
+              </h3>
 
               {templateSubtasks.length > 0 &&
                 (internalMode === "view"
@@ -495,9 +495,9 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
           {!templateId && (
             <>
-              <Header as="h4" attached="top">
+              <h3>
                 Task Subtasks
-              </Header>
+              </h3>
 
               {taskSubtasks.length > 0 &&
                 (internalMode === "view"
