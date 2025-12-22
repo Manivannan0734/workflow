@@ -51,7 +51,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
   const editorRef = useRef(null);
   const templateEditorRef = useRef(null);
-  const subtaskEditorRefs = useRef([]); 
+  const subtaskEditorRefs = useRef([]);
 
   const [assigneeOptions, setAssigneeOptions] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
@@ -242,7 +242,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
 
   const renderEditableSubtaskTable = (listState, listSetter) => {
     subtaskEditorRefs.current = listState.map(
-        (element, i) => subtaskEditorRefs.current[i] ?? React.createRef()
+      (element, i) => subtaskEditorRefs.current[i] ?? React.createRef()
     );
 
     const update = (index, field, value) => {
@@ -256,7 +256,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
       <Table celled structured>
         <Table.Header>
           <Table.Row>
-            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }}  width={3}>Action *</Table.HeaderCell>
+            <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={3}>Action *</Table.HeaderCell>
             <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={7}>Description *</Table.HeaderCell>
             <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={3}>Assignee *</Table.HeaderCell>
             <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} width={2}>Depends On</Table.HeaderCell>
@@ -312,13 +312,13 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
                   placeholder={index === 0 ? "N/A" : "Prev ID or Name"}
                 />
               </Table.Cell>
-              
+
               <Table.Cell textAlign="center">
-                <Button 
-                  icon='trash' 
-                  color='red' 
-                  size='tiny' 
-                  onClick={() => removeSubtask(index, listSetter, listState)} 
+                <Button
+                  icon='trash'
+                  color='red'
+                  size='tiny'
+                  onClick={() => removeSubtask(index, listSetter, listState)}
                   title="Remove Subtask"
                 />
               </Table.Cell>
@@ -388,11 +388,11 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
               <Dropdown
                 selection
                 fluid
-           
+
                 options={templates}
                 value={templateId ?? ""}
                 onChange={onTemplateChange}
-                disabled={internalMode === "view" || internalMode === "edit"} 
+                disabled={internalMode === "view" || internalMode === "edit"}
                 loading={loadingTemplates}
               />
             </Form.Field>
@@ -538,7 +538,7 @@ const TaskModal = ({ open, mode = "create_simple", task = null, onClose, onTaskS
             {internalMode === "view" ? "Edit" : "View"}
           </Button>
         )}
-        
+
         {internalMode !== "view" && (
           <Button
             color="green"

@@ -5,9 +5,10 @@ import TaskModal from "../Component/TaskModal";
 import Toast from "../Component/Toast";
 import ConfirmModal from "../Component/Confirm";
 import { useRouter } from "next/router";
-
+import Link from "next/link";
 const TaskList = () => {
   const [tasks, setTasks] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("simple"); // simple | template | view | edit
@@ -19,9 +20,28 @@ const TaskList = () => {
 
   const router = useRouter();
 
+  // Create a map for templateId -> templateName
+  const templateMap = {};
+  templates.forEach((t) => {
+    templateMap[t.id] = t.name;
+  });
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [templates]); // fetch tasks after templates are loaded
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await axiosInstance.get("/templates/");
+      setTemplates(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch templates", err);
+    }
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -70,6 +90,12 @@ const TaskList = () => {
     router.push("/Landing");
   };
 
+  const getTemplateName = (task) => {
+    if (task.templateName) return task.templateName; // if backend sends name directly
+    if (task.templateId && templateMap[task.templateId]) return templateMap[task.templateId]; // map from templates
+    return "(Simple)";
+  };
+
   return (
     <Segment>
       <h3 style={{ textAlign: "center" }}>Tasks</h3>
@@ -114,13 +140,13 @@ const TaskList = () => {
           <Table.Body>
             {tasks.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan="6" textAlign="center">No tasks found.</Table.Cell>
+                <Table.Cell colSpan="5" textAlign="center">No tasks found.</Table.Cell>
               </Table.Row>
             ) : (
               tasks.map((t) => (
                 <Table.Row key={t.id}>
                   <Table.Cell>{t.name}</Table.Cell>
-                  <Table.Cell>{t.templateName ?? (t.templateId ? `#${t.templateId}` : "(Simple)")}</Table.Cell>
+                  <Table.Cell>{getTemplateName(t)}</Table.Cell>
                   <Table.Cell>{t.createdBy}</Table.Cell>
                   <Table.Cell>{t.createdOn ? new Date(t.createdOn).toLocaleString() : "-"}</Table.Cell>
                   <Table.Cell textAlign="center">

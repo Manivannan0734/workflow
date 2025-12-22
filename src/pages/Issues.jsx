@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { defaultSchema } from "hast-util-sanitize";
-
+import Link from "next/link";
 const Issues = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,8 +58,7 @@ const Issues = () => {
 
   const openTaskDetails = (taskId) => {
     if (!taskId) return;
-    // We pass the ID to the modal; the modal's internal useEffect 
-    // will handle calling loadTaskDetails(taskId)
+ 
     setSelectedTask({ id: taskId }); 
     setTaskModalOpen(true);
   };
@@ -100,9 +99,7 @@ const Issues = () => {
               <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }}>
                 Assignee
               </Table.HeaderCell>
-              <Table.HeaderCell style={{ backgroundColor: "#5f3d97ff", color: "white" }} textAlign="center">
-                Actions
-              </Table.HeaderCell>
+             
             </Table.Row>
           </Table.Header>
 
@@ -110,7 +107,26 @@ const Issues = () => {
             {issues.map((item) => (
               <Table.Row key={item.subtask_id}>
                 <Table.Cell>{item.action}</Table.Cell>
-                <Table.Cell>{item.task_name}</Table.Cell>
+                <Table.Cell>
+  <span
+    onClick={() => openTaskDetails(item.task_id)}
+    style={{
+      color: "#0191ffff",
+      cursor: "pointer",
+      textDecoration: "underline",
+      fontWeight: "500",
+    }}
+    title="Open Task"
+  >
+    {item.action}
+  </span>
+
+
+  {/* <Link style={{textDecoration:"underline",color:"blue"}} href="/TasksList">{item.action}</Link> */}
+
+
+</Table.Cell>
+
 
                 <Table.Cell>
                   <ReactMarkdown
@@ -122,15 +138,7 @@ const Issues = () => {
 
                 <Table.Cell>{formatAssignee(item.assignee)}</Table.Cell>
 
-                <Table.Cell textAlign="center">
-                  <Button
-                    icon="open folder"
-                    size="small"
-                    color="blue"
-                    title="Open Task"
-                    onClick={() => openTaskDetails(item.task_id)}
-                  />
-                </Table.Cell>
+                 
               </Table.Row>
             ))}
           </Table.Body>
