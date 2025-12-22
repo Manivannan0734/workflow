@@ -2,220 +2,294 @@ from flask import Blueprint, request, jsonify
 from app.db import get_cursor, conn
 from app.auth.utils import token_required
 from datetime import datetime
+import psycopg2
 
 tasks_bp = Blueprint("tasks", __name__)
 
-# ---------------------- Helper ----------------------
-def validate_and_get_template(cur, template_id):
-    """Validate template ID and return template row"""
-    if template_id is None:
-        return None
-    try:
-        tid = int(template_id)
-    except (ValueError, TypeError):
-        raise ValueError("Invalid template ID format")
-    
-    cur.execute('SELECT * FROM "Template" WHERE id=%s AND "isDeleted"=false', (tid,))
-    row = cur.fetchone()
-    if not row:
-        raise ValueError(f"Template {tid} not found")
-    return row
+# ======================================================
+# REQUIRED VALIDATION (ONLY)
+# ======================================================
+def validate_required_fields(data):
+    errors = []
 
-# ---------------------- List Tasks ----------------------
+    name = (data.get("name") or "").strip()
+    template_id = data.get("templateId")
+    description = (data.get("description") or "").strip()
+    subtasks = data.get("subtasks") or []
+
+    # Task name
+    if not name:
+        errors.append("Task name is required")
+
+    # Description rules
+    if template_id is None:
+        if not description:
+            errors.append("Description is required for simple task")
+    else:
+        if not description:
+            errors.append("Template description is required")
+
+    # Subtasks validation (if present)
+    for idx, st in enumerate(subtasks, start=1):
+        if not (st.get("action") or "").strip():
+            errors.append(f"Subtask {idx}: Action is required")
+        if not (st.get("description") or "").strip():
+            errors.append(f"Subtask {idx}: Description is required")
+        if not (st.get("assignee") or "").strip():
+            errors.append(f"Subtask {idx}: Assignee is required")
+
+    return errors
+
+
+# ======================================================
+# LIST TASKS
+# ======================================================
 @tasks_bp.route("/", methods=["GET"])
 @token_required
 def get_tasks(current_user):
     cur = get_cursor()
-    cur.execute("""
-        SELECT t.id, t.name, t.description, t."templateId",
-               t."templateName", t."templateDescription", t."createdBy", t."createdOn"
-        FROM "Task" t
-        WHERE t."isDeleted" = false
-        ORDER BY t."createdOn" DESC
-    """)
-    rows = cur.fetchall()
-    tasks = [
-        {
-            "id": r[0],
-            "name": r[1],
-            "description": r[2],
-            "templateId": r[3],
-            "templateName": r[4],
-            "templateDescription": r[5],
-            "createdBy": r[6],
-            "createdOn": r[7].strftime("%Y-%m-%dT%H:%M:%S") if r[7] else None
-        }
-        for r in rows
-    ]
-    cur.close()
-    return jsonify(tasks), 200
+    try:
+        cur.execute("""
+            SELECT id, name, description, "templateId",
+                   "templateName", "templateDescription",
+                   "createdBy", "createdOn"
+            FROM "Task"
+            WHERE "isDeleted" = false
+            ORDER BY "createdOn" DESC
+        """)
+        rows = cur.fetchall()
 
-# ---------------------- Get Single Task ----------------------
+        tasks = [
+            {
+                "id": r[0],
+                "name": r[1],
+                "description": r[2],
+                "templateId": r[3],
+                "templateName": r[4],
+                "templateDescription": r[5],
+                "createdBy": r[6],
+                "createdOn": r[7].isoformat() if r[7] else None
+            }
+            for r in rows
+        ]
+        cur.close()
+        return jsonify(tasks), 200
+
+    except Exception as e:
+        cur.close()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ======================================================
+# GET SINGLE TASK
+# ======================================================
 @tasks_bp.route("/<int:id>", methods=["GET"])
 @token_required
 def get_task(current_user, id):
     cur = get_cursor()
-    cur.execute("""
-        SELECT t.id, t.name, t.description, t."templateId",
-               t."templateName", t."templateDescription", t."createdBy"
-        FROM "Task" t
-        WHERE t.id=%s AND t."isDeleted"=false
-    """, (id,))
-    task_row = cur.fetchone()
-    if not task_row:
+    try:
+        cur.execute("""
+            SELECT id, name, description, "templateId",
+                   "templateName", "templateDescription", "createdBy"
+            FROM "Task"
+            WHERE id=%s AND "isDeleted"=false
+        """, (id,))
+        row = cur.fetchone()
+
+        if not row:
+            cur.close()
+            return jsonify({"error": "Task not found"}), 404
+
+        task = {
+            "id": row[0],
+            "name": row[1],
+            "description": row[2],
+            "templateId": row[3],
+            "templateName": row[4],
+            "templateDescription": row[5],
+            "createdBy": row[6],
+        }
+
+        # Subtasks
+        cur.execute("""
+            SELECT id, action, description, assignee, "dependsOn", "originalSubId"
+            FROM "TaskSubTask"
+            WHERE "taskId"=%s
+            ORDER BY id
+        """, (id,))
+        task["taskSubtasks"] = [
+            {
+                "id": r[0],
+                "action": r[1],
+                "description": r[2],
+                "assignee": r[3],
+                "dependsOn": r[4],
+                "originalSubId": r[5]
+            } for r in cur.fetchall()
+        ]
+
         cur.close()
-        return jsonify({"error": "Task not found"}), 404
+        return jsonify(task), 200
 
-    task = {
-        "id": task_row[0],
-        "name": task_row[1],
-        "description": task_row[2],
-        "templateId": task_row[3],
-        "templateName": task_row[4],
-        "templateDescription": task_row[5],
-        "createdBy": task_row[6]
-    }
+    except Exception:
+        cur.close()
+        return jsonify({"error": "Internal server error"}), 500
 
-    # Load subtasks
-    cur.execute("""
-        SELECT id, action, description, assignee, "dependsOn", "originalSubId"
-        FROM "TaskSubTask"
-        WHERE "taskId" = %s
-        ORDER BY id
-    """, (id,))
-    task["taskSubtasks"] = [
-        {
-            "id": r[0],
-            "action": r[1],
-            "description": r[2],
-            "assignee": r[3],
-            "dependsOn": r[4],
-            "originalSubId": r[5]
-        } for r in cur.fetchall()
-    ]
-    cur.close()
-    return jsonify(task), 200
 
-# ---------------------- Create Task ----------------------
+# ======================================================
+# CREATE TASK
+# ======================================================
 @tasks_bp.route("/", methods=["POST"])
 @token_required
 def create_task(current_user):
-    data = request.get_json()
-    name = data.get("name")
-    template_id = data.get("templateId")
-    description = data.get("description")
-    subtasks = data.get("subtasks", [])
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON payload"}), 400
 
-    if not name or not name.strip():
-        return jsonify({"error": "Task name required"}), 400
+    errors = validate_required_fields(data)
+    if errors:
+        return jsonify({
+            "error": "Validation failed",
+            "messages": errors
+        }), 400
+
+    name = data.get("name").strip()
+    template_id = data.get("templateId")
+    description = data.get("description").strip()
+    subtasks = data.get("subtasks") or []
 
     cur = get_cursor()
+    try:
+        # Insert Task
+        if template_id:
+            cur.execute("""
+                INSERT INTO "Task"
+                (name, "templateId", "templateDescription", "createdBy", "createdOn", "isDeleted")
+                VALUES (%s,%s,%s,%s,%s,false)
+                RETURNING id
+            """, (name, template_id, description, current_user["email"], datetime.now()))
+        else:
+            cur.execute("""
+                INSERT INTO "Task"
+                (name, description, "createdBy", "createdOn", "isDeleted")
+                VALUES (%s,%s,%s,%s,false)
+                RETURNING id
+            """, (name, description, current_user["email"], datetime.now()))
 
-    # Duplicate check
-    template_clause = 'AND "templateId" IS NULL' if template_id is None else 'AND "templateId" = %s'
-    template_param = () if template_id is None else (template_id,)
-    cur.execute(f'SELECT 1 FROM "Task" WHERE name=%s AND "isDeleted"=false {template_clause}', (name.strip(),) + template_param)
-    if cur.fetchone():
-        cur.close()
-        return jsonify({"error": "Task already exists"}), 409
-
-    # If template-based task, copy template details
-    if template_id:
-        template_row = validate_and_get_template(cur, template_id)
-        cur.execute(
-            'INSERT INTO "Task" (name, "templateId", "templateName", "templateDescription", "templateCreatedBy", "templateLabel", "createdBy", "createdOn", "isDeleted") VALUES (%s,%s,%s,%s,%s,%s,%s,%s,false) RETURNING id',
-            (name.strip(), template_id, template_row[1], template_row[2], template_row[3], template_row[5], current_user["email"], datetime.now())
-        )
         task_id = cur.fetchone()[0]
 
-        # Copy subtasks from template
-        cur.execute("""
-            INSERT INTO "TaskSubTask" ("taskId", action, description, assignee, "dependsOn", "originalSubId")
-            SELECT %s, st.action, st.description, st.assignee, st."dependsOn", st.id
-            FROM "SubTask" st
-            WHERE st."templateId" = %s
-        """, (task_id, template_id))
+        # Insert Subtasks
+        for st in subtasks:
+            cur.execute("""
+                INSERT INTO "TaskSubTask"
+                ("taskId", action, description, assignee, "dependsOn")
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                task_id,
+                st.get("action"),
+                st.get("description"),
+                st.get("assignee"),
+                st.get("dependsOn")
+            ))
+
         conn.commit()
         cur.close()
-        return jsonify({"message": "Template-based task created", "id": task_id}), 201
+        return jsonify({"message": "Task created", "id": task_id}), 201
 
-    # Simple task
-    if not description or not description.strip():
+    except Exception:
+        conn.rollback()
         cur.close()
-        return jsonify({"error": "Description required for simple task"}), 400
-    cur.execute(
-        'INSERT INTO "Task" (name, description, "createdBy", "createdOn", "isDeleted") VALUES (%s,%s,%s,%s,false) RETURNING id',
-        (name.strip(), description.strip(), current_user["email"], datetime.now())
-    )
-    task_id = cur.fetchone()[0]
+        return jsonify({"error": "Internal server error"}), 500
 
-    # Insert subtasks if any
-    for st in subtasks:
-        cur.execute(
-            'INSERT INTO "TaskSubTask" ("taskId", action, description, assignee, "dependsOn") VALUES (%s,%s,%s,%s,%s)',
-            (task_id, st.get("action"), st.get("description"), st.get("assignee"), st.get("dependsOn"))
-        )
 
-    conn.commit()
-    cur.close()
-    return jsonify({"message": "Simple task created", "id": task_id}), 201
-
-# ---------------------- Update Task ----------------------
+# ======================================================
+# UPDATE TASK
+# ======================================================
 @tasks_bp.route("/<int:id>", methods=["PUT"])
 @token_required
 def update_task(current_user, id):
-    data = request.get_json()
-    name = data.get("name")
-    template_id = data.get("templateId")
-    description = data.get("description")
-    subtasks = data.get("subtasks", [])
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON payload"}), 400
 
-    if not name or not name.strip():
-        return jsonify({"error": "Task name required"}), 400
+    errors = validate_required_fields(data)
+    if errors:
+        return jsonify({
+            "error": "Validation failed",
+            "messages": errors
+        }), 400
+
+    name = data.get("name").strip()
+    template_id = data.get("templateId")
+    description = data.get("description").strip()
+    subtasks = data.get("subtasks") or []
 
     cur = get_cursor()
-    cur.execute('SELECT id FROM "Task" WHERE id=%s AND "isDeleted"=false', (id,))
-    if not cur.fetchone():
+    try:
+        # Check exists
+        cur.execute('SELECT 1 FROM "Task" WHERE id=%s AND "isDeleted"=false', (id,))
+        if not cur.fetchone():
+            cur.close()
+            return jsonify({"error": "Task not found"}), 404
+
+        # Update task
+        if template_id:
+            cur.execute("""
+                UPDATE "Task"
+                SET name=%s, "templateId"=%s, "templateDescription"=%s
+                WHERE id=%s
+            """, (name, template_id, description, id))
+        else:
+            cur.execute("""
+                UPDATE "Task"
+                SET name=%s, description=%s, "templateId"=NULL
+                WHERE id=%s
+            """, (name, description, id))
+
+        # Replace subtasks
+        cur.execute('DELETE FROM "TaskSubTask" WHERE "taskId"=%s', (id,))
+        for st in subtasks:
+            cur.execute("""
+                INSERT INTO "TaskSubTask"
+                ("taskId", action, description, assignee, "dependsOn")
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                id,
+                st.get("action"),
+                st.get("description"),
+                st.get("assignee"),
+                st.get("dependsOn")
+            ))
+
+        conn.commit()
         cur.close()
-        return jsonify({"error": "Task not found"}), 404
+        return jsonify({"message": "Task updated"}), 200
 
-    # Duplicate check
-    template_clause = 'AND "templateId" IS NULL' if template_id is None else 'AND "templateId" = %s'
-    template_param = () if template_id is None else (template_id,)
-    cur.execute(f'SELECT 1 FROM "Task" WHERE name=%s AND id != %s AND "isDeleted"=false {template_clause}', (name.strip(), id) + template_param)
-    if cur.fetchone():
+    except Exception:
+        conn.rollback()
         cur.close()
-        return jsonify({"error": "Task name already exists"}), 409
+        return jsonify({"error": "Internal server error"}), 500
 
-    if template_id:
-        template_row = validate_and_get_template(cur, template_id)
-        cur.execute(
-            'UPDATE "Task" SET name=%s, "templateDescription"=%s WHERE id=%s RETURNING id',
-            (name.strip(), description, id)
-        )
-    else:
-        cur.execute(
-            'UPDATE "Task" SET name=%s, description=%s WHERE id=%s RETURNING id',
-            (name.strip(), description.strip(), id)
-        )
 
-    # Delete old subtasks and insert new ones
-    cur.execute('DELETE FROM "TaskSubTask" WHERE "taskId"=%s', (id,))
-    for st in subtasks:
-        cur.execute(
-            'INSERT INTO "TaskSubTask" ("taskId", action, description, assignee, "dependsOn") VALUES (%s,%s,%s,%s,%s)',
-            (id, st.get("action"), st.get("description"), st.get("assignee"), st.get("dependsOn"))
-        )
-    conn.commit()
-    cur.close()
-    return jsonify({"message": "Task updated"}), 200
-
-# ---------------------- Delete Task ----------------------
+# ======================================================
+# DELETE TASK (SOFT)
+# ======================================================
 @tasks_bp.route("/<int:id>", methods=["DELETE"])
 @token_required
 def delete_task(current_user, id):
     cur = get_cursor()
-    cur.execute('UPDATE "Task" SET "isDeleted"=true WHERE id=%s', (id,))
-    conn.commit()
-    cur.close()
-    return jsonify({"message": "Task deleted"}), 200
+    try:
+        cur.execute('SELECT 1 FROM "Task" WHERE id=%s AND "isDeleted"=false', (id,))
+        if not cur.fetchone():
+            cur.close()
+            return jsonify({"error": "Task not found"}), 404
+
+        cur.execute('UPDATE "Task" SET "isDeleted"=true WHERE id=%s', (id,))
+        conn.commit()
+        cur.close()
+        return jsonify({"message": "Task deleted"}), 200
+
+    except Exception:
+        conn.rollback()
+        cur.close()
+        return jsonify({"error": "Internal server error"}), 500

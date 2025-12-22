@@ -2,9 +2,12 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from app.db import get_cursor, conn
 from app.auth.utils import token_required
+
 templates_bp = Blueprint("templates", __name__)
 
-
+# ===============================
+# GET ALL TEMPLATES
+# ===============================
 @templates_bp.route("/", methods=["GET"])
 @token_required
 def get_templates():
@@ -16,7 +19,9 @@ def get_templates():
         ORDER BY "createdOn" DESC
     """)
     rows = cur.fetchall()
-    templates = [
+    cur.close()
+
+    return jsonify([
         {
             "id": r[0],
             "name": r[1],
@@ -26,11 +31,38 @@ def get_templates():
             "label": r[5],
         }
         for r in rows
-    ]
+    ]), 200
+
+
+# ===============================
+# GET SUBTASKS (FLOW API)
+# ===============================
+@templates_bp.route("/<int:template_id>/subtasks", methods=["GET"])
+@token_required
+def get_subtasks(template_id):
+    cur = get_cursor()
+    cur.execute("""
+        SELECT action, "dependsOn", description
+        FROM "SubTask"
+        WHERE "templateId" = %s
+        ORDER BY id ASC
+    """, (template_id,))
+    rows = cur.fetchall()
     cur.close()
-    return jsonify(templates), 200
+
+    return jsonify([
+        {
+            "action": r[0],
+            "dependsOn": r[1],
+            "description": r[2]
+        }
+        for r in rows
+    ]), 200
 
 
+# ===============================
+# GET TEMPLATE BY ID (WITH SUBTASKS)
+# ===============================
 @templates_bp.route("/<int:id>", methods=["GET"])
 @token_required
 def get_template_by_id(id):
@@ -41,6 +73,7 @@ def get_template_by_id(id):
         WHERE id = %s AND "isDeleted" = false
     """, (id,))
     row = cur.fetchone()
+
     if not row:
         cur.close()
         return jsonify({"error": "Template not found"}), 404
@@ -54,7 +87,6 @@ def get_template_by_id(id):
         "label": row[5],
     }
 
-    # fetch subtasks
     cur.execute("""
         SELECT id, action, "dependsOn", description, assignee
         FROM "SubTask"
@@ -62,6 +94,8 @@ def get_template_by_id(id):
         ORDER BY id ASC
     """, (id,))
     subtask_rows = cur.fetchall()
+    cur.close()
+
     template["subtasks"] = [
         {
             "id": r[0],
@@ -73,90 +107,100 @@ def get_template_by_id(id):
         for r in subtask_rows
     ]
 
-    cur.close()
     return jsonify(template), 200
 
 
-
+# ===============================
+# CREATE TEMPLATE
+# ===============================
 @templates_bp.route("/", methods=["POST"])
 @token_required
 def add_template():
     data = request.json
-    name = data.get("name")
-    description = data.get("description")
-    createdBy = data.get("createdBy", "Admin")
-    label = data.get("label")
-    subtasks = data.get("subtasks", [])
-
-    if not name:
-        return jsonify({"error": "Template name is required"}), 400
-
     cur = get_cursor()
-    createdOn = datetime.now()
 
-    # insert template
     cur.execute("""
-        INSERT INTO "Template" (name, description, "createdBy", "createdOn", label, "isDeleted")
+        INSERT INTO "Template"
+        (name, description, "createdBy", "createdOn", label, "isDeleted")
         VALUES (%s, %s, %s, %s, %s, false)
         RETURNING id
-    """, (name, description, createdBy, createdOn, label))
-    new_id = cur.fetchone()[0]
+    """, (
+        data["name"],
+        data.get("description"),
+        data.get("createdBy", "Admin"),
+        datetime.now(),
+        data.get("label"),
+    ))
 
-    # insert subtasks if present
-    for s in subtasks:
+    template_id = cur.fetchone()[0]
+
+    for s in data.get("subtasks", []):
         cur.execute("""
-            INSERT INTO "SubTask" (action, "dependsOn", description, assignee, "templateId")
+            INSERT INTO "SubTask"
+            (action, "dependsOn", description, assignee, "templateId")
             VALUES (%s, %s, %s, %s, %s)
-        """, (s.get("action"), s.get("dependsOn"), s.get("description"), s.get("assignee"), new_id))
+        """, (
+            s.get("action"),
+            s.get("dependsOn"),
+            s.get("description"),
+            s.get("assignee"),
+            template_id
+        ))
 
     conn.commit()
     cur.close()
+    return jsonify({"id": template_id}), 201
 
-    return jsonify({"message": "Template created successfully", "id": new_id}), 201
 
-
-# ✅ Update template + subtasks
+# ===============================
+# UPDATE TEMPLATE
+# ===============================
 @templates_bp.route("/<int:id>", methods=["PUT"])
 @token_required
-
 def update_template(id):
     data = request.json
-    name = data.get("name")
-    description = data.get("description")
-    createdBy = data.get("createdBy", "Admin")
-    label = data.get("label")
-    subtasks = data.get("subtasks", [])
-
     cur = get_cursor()
-    # update template
+
     cur.execute("""
         UPDATE "Template"
-        SET name = %s, description = %s, "createdBy" = %s, label = %s
-        WHERE id = %s
-    """, (name, description, createdBy, label, id))
+        SET name=%s, description=%s, "createdBy"=%s, label=%s
+        WHERE id=%s
+    """, (
+        data["name"],
+        data.get("description"),
+        data.get("createdBy", "Admin"),
+        data.get("label"),
+        id
+    ))
 
-    # clear old subtasks
-    cur.execute("""DELETE FROM "SubTask" WHERE "templateId" = %s""", (id,))
+    cur.execute("""DELETE FROM "SubTask" WHERE "templateId"=%s""", (id,))
 
-    # insert new subtasks
-    for s in subtasks:
+    for s in data.get("subtasks", []):
         cur.execute("""
-            INSERT INTO "SubTask" (action, "dependsOn", description, assignee, "templateId")
+            INSERT INTO "SubTask"
+            (action, "dependsOn", description, assignee, "templateId")
             VALUES (%s, %s, %s, %s, %s)
-        """, (s.get("action"), s.get("dependsOn"), s.get("description"), s.get("assignee"), id))
+        """, (
+            s.get("action"),
+            s.get("dependsOn"),
+            s.get("description"),
+            s.get("assignee"),
+            id
+        ))
 
     conn.commit()
     cur.close()
-    return jsonify({"message": "Template and subtasks updated successfully"}), 200
+    return jsonify({"message": "Updated"}), 200
 
 
-# ✅ Soft delete
+# ===============================
+# SOFT DELETE
+# ===============================
 @templates_bp.route("/<int:id>", methods=["DELETE"])
 @token_required
 def delete_template(id):
     cur = get_cursor()
-    cur.execute("""UPDATE "Template" SET "isDeleted" = true WHERE id = %s""", (id,))
+    cur.execute("""UPDATE "Template" SET "isDeleted"=true WHERE id=%s""", (id,))
     conn.commit()
     cur.close()
-    return jsonify({"message": "Template deleted successfully"}), 200
- 
+    return jsonify({"message": "Deleted"}), 200
